@@ -1,2 +1,0 @@
-# ZS-theme
-ZS-theme
