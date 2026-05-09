@@ -1,0 +1,54 @@
+<!-- wp:group {"className":"zs-header","style":{"spacing":{"padding":{"top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"}},"border":{"bottom":{"color":"var:preset|color|border","width":"1px","style":"solid"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group zs-header" style="border-bottom-color:var(--wp--preset--color--border);border-bottom-style:solid;border-bottom-width:1px;padding-top:var(--wp--preset--spacing--20);padding-bottom:var(--wp--preset--spacing--20)">
+	<!-- wp:group {"layout":{"type":"flex","justifyContent":"space-between","flexWrap":"wrap"}} -->
+	<div class="wp-block-group">
+		<!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap","verticalAlignment":"center"},"style":{"spacing":{"blockGap":"var:preset|spacing|20"}}} -->
+		<div class="wp-block-group">
+			<!-- wp:group {"className":"zs-logo-group","layout":{"type":"flex","flexWrap":"nowrap","verticalAlignment":"center"},"style":{"spacing":{"blockGap":"var:preset|spacing|20"}}} -->
+			<div class="wp-block-group zs-logo-group">
+				<!-- wp:site-logo {"width":32,"style":{"border":{"radius":"6px"}}} /-->
+				<!-- wp:site-title {"level":0,"style":{"typography":{"fontWeight":"800","letterSpacing":"-0.03em"}}} /-->
+			</div>
+			<!-- /wp:group -->
+
+			<!-- wp:html -->
+			<a class="zs-inner-page-label" href="/" style="display:none;"></a>
+			<!-- /wp:html -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap","verticalAlignment":"center"},"style":{"spacing":{"blockGap":"var:preset|spacing|30"}}} -->
+		<div class="wp-block-group">
+			<!-- wp:navigation {"layout":{"type":"flex","justifyContent":"right"},"style":{"spacing":{"blockGap":"var:preset|spacing|40"},"typography":{"fontWeight":"500","letterSpacing":"0.04em"}}} /-->
+
+			<!-- wp:html -->
+			<button class="zs-search-trigger" type="button" aria-label="Search">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+				<span class="zs-search-shortcut"></span>
+			</button>
+			<!-- /wp:html -->
+
+			<!-- wp:html -->
+			<button class="zs-theme-toggle" type="button" aria-label="Toggle dark mode"></button>
+			<!-- /wp:html -->
+		</div>
+		<!-- /wp:group -->
+	</div>
+	<!-- /wp:group -->
+</div>
+<!-- /wp:group -->
+
+<!-- wp:html -->
+<div class="zs-search-modal" role="dialog" aria-label="Search">
+	<div class="zs-search-modal-content">
+		<form role="search" method="get" action="/">
+			<div class="zs-search-modal-input-wrap">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:0.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+				<input class="zs-search-modal-input" type="search" name="s" placeholder="Search articles..." autocomplete="off">
+				<kbd class="zs-search-kbd">ESC</kbd>
+			</div>
+		</form>
+		<p class="zs-search-modal-hint">Press Enter to search, ESC to close</p>
+	</div>
+</div>
+<!-- /wp:html -->
