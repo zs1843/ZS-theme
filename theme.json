@@ -109,6 +109,11 @@
           "fontFamily": "'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace",
           "slug": "mono",
           "name": "Monospace"
+        },
+        {
+          "fontFamily": "'Noto Serif SC', 'Songti SC', 'Source Han Serif SC', Georgia, serif",
+          "slug": "noto-serif-sc",
+          "name": "Noto Serif SC"
         }
       ],
       "fontSizes": [

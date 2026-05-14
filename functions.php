@@ -123,6 +123,8 @@ function zs_theme_settings_defaults() {
 		'banner_images'      => '',
 		'banner_interval'    => '5',
 		'banner_position'    => 'fullwidth',
+		'bing_api_key'       => '',
+		'bing_banner_query'  => '',
 	);
 }
 
@@ -170,6 +172,10 @@ function zs_theme_sanitize_options( $input ) {
 		} elseif ( $key === 'banner_position' ) {
 			$output[ $key ] = in_array( $input[ $key ] ?? '', array( 'fullwidth', 'inner' ), true )
 				? $input[ $key ] : 'fullwidth';
+		} elseif ( $key === 'bing_api_key' ) {
+			$output[ $key ] = sanitize_text_field( $input[ $key ] ?? '' );
+		} elseif ( $key === 'bing_banner_query' ) {
+			$output[ $key ] = sanitize_text_field( $input[ $key ] ?? '' );
 		} else {
 			$output[ $key ] = sanitize_text_field( $input[ $key ] ?? $default );
 		}
@@ -282,10 +288,73 @@ function zs_theme_settings_page() {
 						</select>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row">自动获取 Banner 图片</th>
+					<td>
+						<button type="button" id="zs-fetch-banner" class="button">🔍 从必应自动获取 Banner 图片</button>
+						<span id="zs-fetch-banner-status" style="margin-left:10px;color:#666;"></span>
+						<p class="description">根据下方关键词从必应图片搜索获取3张横向图片并自动填入上方配置。需要先填写 Bing API Key。</p>
+					</td>
+				</tr>
 			</table>
+
+			<h2 class="title">图片自动获取配置</h2>
+			<table class="form-table">
+				<tr>
+					<th scope="row">Bing 图片搜索 API Key</th>
+					<td>
+						<input type="text" name="zs_theme_options[bing_api_key]" value="<?php echo esc_attr( $opts['bing_api_key'] ); ?>" class="regular-text" placeholder="在 Azure 申请免费 Bing Search API Key">
+						<p class="description">前往 <a href="https://www.microsoft.com/en-us/bing/apis/bing-image-search-api" target="_blank">azure.microsoft.com</a> 申请免费 Bing Search v7 Key（每月1000次免费）。</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">Banner 图片搜索关键词</th>
+					<td>
+						<input type="text" name="zs_theme_options[bing_banner_query]" value="<?php echo esc_attr( $opts['bing_banner_query'] ); ?>" class="regular-text" placeholder="例如：风景 壁纸 宽屏">
+						<p class="description">自动获取 Banner 图片时使用的搜索词，留空则使用站点名称。</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">刷新文章特色图片</th>
+					<td>
+						<button type="button" id="zs-fetch-posts-images" class="button">🖼 为无封面文章自动配图</button>
+						<span id="zs-fetch-posts-status" style="margin-left:10px;color:#666;"></span>
+						<p class="description">为所有没有特色图片的文章，以文章标题为关键词从必应搜索并自动设置封面图（16:9）。每次处理最多10篇。</p>
+					</td>
+				</tr>
+			</table>
+
 			<?php submit_button( '保存设置' ); ?>
 		</form>
 	</div>
+
+	<script>
+	(function($) {
+		var nonce = '<?php echo esc_js( wp_create_nonce( 'zs_admin_ajax' ) ); ?>';
+		var ajaxUrl = '<?php echo esc_js( admin_url( 'admin-ajax.php' ) ); ?>';
+
+		function zsAdminAjax(action, statusEl, successMsg) {
+			statusEl.text('处理中…');
+			$.post(ajaxUrl, { action: action, nonce: nonce }, function(res) {
+				if (res.success) {
+					statusEl.css('color', 'green').text(successMsg + (res.data.detail || ''));
+				} else {
+					statusEl.css('color', 'red').text('失败：' + (res.data.message || '未知错误'));
+				}
+			}).fail(function() {
+				statusEl.css('color', 'red').text('请求失败，请检查网络或 API Key。');
+			});
+		}
+
+		$('#zs-fetch-banner').on('click', function() {
+			zsAdminAjax('zs_fetch_banner_images', $('#zs-fetch-banner-status'), '✓ Banner 图片已更新！');
+		});
+
+		$('#zs-fetch-posts-images').on('click', function() {
+			zsAdminAjax('zs_fetch_post_images', $('#zs-fetch-posts-status'), '✓ 完成！');
+		});
+	})(jQuery);
+	</script>
 	<?php
 }
 
@@ -445,3 +514,142 @@ function zs_shortcode_banner( $atts ) {
 	return $html;
 }
 add_shortcode( 'zs_banner', 'zs_shortcode_banner' );
+
+// ── Google Fonts: Noto Serif SC for article body ──
+
+function zs_enqueue_google_fonts() {
+	wp_enqueue_style(
+		'zs-noto-serif-sc',
+		'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap',
+		array(),
+		null
+	);
+}
+add_action( 'wp_enqueue_scripts', 'zs_enqueue_google_fonts' );
+
+// ── Bing Image Search helpers ──
+
+function zs_bing_search_images( $api_key, $query, $count = 1, $aspect = 'Wide' ) {
+	$url    = 'https://api.bing.microsoft.com/v7.0/images/search';
+	$params = array(
+		'q'          => $query,
+		'count'      => $count,
+		'aspect'     => $aspect,
+		'imageType'  => 'Photo',
+		'safeSearch' => 'Moderate',
+		'mkt'        => 'zh-CN',
+	);
+	$response = wp_remote_get( add_query_arg( $params, $url ), array(
+		'headers' => array( 'Ocp-Apim-Subscription-Key' => $api_key ),
+		'timeout' => 15,
+	) );
+	if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
+		return array();
+	}
+	$body = json_decode( wp_remote_retrieve_body( $response ), true );
+	$urls = array();
+	if ( ! empty( $body['value'] ) ) {
+		foreach ( $body['value'] as $item ) {
+			if ( ! empty( $item['contentUrl'] ) ) {
+				$urls[] = $item['contentUrl'];
+			}
+		}
+	}
+	return $urls;
+}
+
+function zs_sideload_image( $url, $post_id, $desc = '' ) {
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+	$id = media_sideload_image( $url, $post_id, $desc, 'id' );
+	return is_wp_error( $id ) ? false : $id;
+}
+
+// ── AJAX: fetch banner images from Bing ──
+
+function zs_ajax_fetch_banner_images() {
+	check_ajax_referer( 'zs_admin_ajax', 'nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => '权限不足' ) );
+	}
+
+	$api_key = zs_theme_get_option( 'bing_api_key' );
+	if ( empty( $api_key ) ) {
+		wp_send_json_error( array( 'message' => '请先填写 Bing API Key' ) );
+	}
+
+	$query = zs_theme_get_option( 'bing_banner_query' );
+	if ( empty( $query ) ) {
+		$query = get_bloginfo( 'name' ) . ' 风景 壁纸';
+	}
+
+	$urls = zs_bing_search_images( $api_key, $query . ' 宽屏 横版', 3, 'Wide' );
+	if ( empty( $urls ) ) {
+		wp_send_json_error( array( 'message' => '未找到图片，请检查关键词或 API Key' ) );
+	}
+
+	$options                  = get_option( 'zs_theme_options', array() );
+	$options['banner_images'] = implode( ',', array_map( 'esc_url_raw', $urls ) );
+	update_option( 'zs_theme_options', $options );
+
+	wp_send_json_success( array(
+		'detail' => ' 共获取 ' . count( $urls ) . ' 张，已保存到 Banner 配置。',
+		'urls'   => $urls,
+	) );
+}
+add_action( 'wp_ajax_zs_fetch_banner_images', 'zs_ajax_fetch_banner_images' );
+
+// ── AJAX: fetch post featured images from Bing ──
+
+function zs_ajax_fetch_post_images() {
+	check_ajax_referer( 'zs_admin_ajax', 'nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => '权限不足' ) );
+	}
+
+	$api_key = zs_theme_get_option( 'bing_api_key' );
+	if ( empty( $api_key ) ) {
+		wp_send_json_error( array( 'message' => '请先填写 Bing API Key' ) );
+	}
+
+	// Fetch posts without featured images (up to 10 at a time)
+	$posts = get_posts( array(
+		'post_type'      => 'post',
+		'post_status'    => 'publish',
+		'posts_per_page' => 10,
+		'meta_query'     => array(
+			array(
+				'key'     => '_thumbnail_id',
+				'compare' => 'NOT EXISTS',
+			),
+		),
+	) );
+
+	if ( empty( $posts ) ) {
+		wp_send_json_success( array( 'detail' => ' 所有文章已有封面图，无需处理。' ) );
+	}
+
+	$done  = 0;
+	$fails = 0;
+	foreach ( $posts as $post ) {
+		$query = wp_strip_all_tags( $post->post_title );
+		$urls  = zs_bing_search_images( $api_key, $query, 1, 'Wide' );
+		if ( empty( $urls ) ) {
+			$fails++;
+			continue;
+		}
+		$att_id = zs_sideload_image( $urls[0], $post->ID, $query );
+		if ( $att_id ) {
+			set_post_thumbnail( $post->ID, $att_id );
+			$done++;
+		} else {
+			$fails++;
+		}
+	}
+
+	wp_send_json_success( array(
+		'detail' => " 成功 {$done} 篇，失败 {$fails} 篇。",
+	) );
+}
+add_action( 'wp_ajax_zs_fetch_post_images', 'zs_ajax_fetch_post_images' );

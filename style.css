@@ -1108,12 +1108,20 @@ h1, h2, h3, h4, h5, h6,
 
 /* ── v1.3: Mobile nav Apple style ── */
 
+/* Accordion: reveal from top + fade in */
 @keyframes zs-nav-slide-down {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; clip-path: inset(0 0 100% 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0% 0); }
 }
 
 @media (max-width: 782px) {
+  /* Mobile site title — 18px bold */
+  .zs-header .wp-block-site-title a,
+  .zs-header .wp-block-site-title {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+  }
+
   /* Hamburger open button */
   .wp-block-navigation__responsive-container-open {
     display: flex;
@@ -1133,9 +1141,9 @@ h1, h2, h3, h4, h5, h6,
     background: var(--wp--preset--color--light);
   }
 
-  /* Full-screen overlay */
+  /* Full-screen overlay with accordion animation */
   .wp-block-navigation__responsive-container.is-menu-open {
-    animation: zs-nav-slide-down 0.28s cubic-bezier(0.4, 0, 0.2, 1) both !important;
+    animation: zs-nav-slide-down 0.32s cubic-bezier(0.16, 1, 0.3, 1) both !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -1144,43 +1152,29 @@ h1, h2, h3, h4, h5, h6,
     width: 100vw !important;
     height: 100dvh !important;
     z-index: 9999 !important;
-    display: flex !important;
-    flex-direction: column !important;
+    display: block !important;
     padding: 0 !important;
     background: var(--wp--preset--color--surface) !important;
-    overflow-x: hidden !important;
-    overflow-y: hidden !important;
-    clip: auto !important;
-    clip-path: none !important;
+    overflow: hidden !important;
     transform: none !important;
   }
 
-  /* Fake header bar at top of overlay (same height as real header) */
-  .wp-block-navigation__responsive-container.is-menu-open::before {
-    content: '';
-    display: block;
-    height: 57px;
-    border-bottom: 1px solid var(--wp--preset--color--border);
-    flex-shrink: 0;
-  }
-
-  /* Scrollable nav items area */
+  /* Scrollable nav items area — pushed 57px below header zone */
   .wp-block-navigation__responsive-container.is-menu-open
     .wp-block-navigation__responsive-container-content {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 0 !important;
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0 0 var(--wp--preset--spacing--50) !important;
+    display: block !important;
+    margin-top: 57px !important;
+    height: calc(100dvh - 57px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border-top: 1px solid var(--wp--preset--color--border) !important;
+    padding: 0 0 env(safe-area-inset-bottom, 20px) !important;
   }
 
-  /* Close button — scoped to open state only */
+  /* Close button — fixed to viewport top-right corner */
   .wp-block-navigation__responsive-container.is-menu-open
     .wp-block-navigation__responsive-container-close {
-    position: absolute !important;
+    position: fixed !important;
     top: 10px !important;
     right: 16px !important;
     width: 36px !important;
@@ -1205,21 +1199,22 @@ h1, h2, h3, h4, h5, h6,
   /* Each nav item row */
   .wp-block-navigation__responsive-container.is-menu-open
     .wp-block-navigation-item {
+    display: block !important;
     width: 100% !important;
     margin: 0 !important;
     border-bottom: 1px solid var(--wp--preset--color--border) !important;
   }
 
-  /* Nav item link */
+  /* Nav item link — 18px bold */
   .wp-block-navigation__responsive-container.is-menu-open
     .wp-block-navigation-item a {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    padding: 0 var(--wp--preset--spacing--40) !important;
-    height: 52px !important;
-    font-size: 1rem !important;
-    font-weight: 400 !important;
+    padding: 0 20px !important;
+    height: 56px !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
     letter-spacing: 0 !important;
     color: var(--wp--preset--color--dark) !important;
     text-decoration: none !important;
@@ -1234,12 +1229,13 @@ h1, h2, h3, h4, h5, h6,
     color: var(--wp--preset--color--accent) !important;
   }
 
-  /* Chevron — suppress any ::after from existing link styles first */
+  /* Chevron on right — replaced with › */
   .wp-block-navigation__responsive-container.is-menu-open
     .wp-block-navigation-item a::after {
     content: '›' !important;
     display: block !important;
-    font-size: 1.25rem !important;
+    font-size: 1.4rem !important;
+    font-weight: 300 !important;
     line-height: 1 !important;
     color: var(--wp--preset--color--muted) !important;
     width: auto !important;
@@ -1257,8 +1253,9 @@ h1, h2, h3, h4, h5, h6,
     background: #0f172a !important;
   }
 
-  .zs-dark .wp-block-navigation__responsive-container.is-menu-open::before {
-    border-bottom-color: #334155 !important;
+  .zs-dark .wp-block-navigation__responsive-container.is-menu-open
+    .wp-block-navigation__responsive-container-content {
+    border-top-color: #334155 !important;
   }
 
   .zs-dark .wp-block-navigation__responsive-container.is-menu-open
@@ -1612,4 +1609,37 @@ h1, h2, h3, h4, h5, h6,
 
 .page .wp-block-post-title {
   font-size: clamp(1.5rem, 3vw, 1.75rem);
+}
+
+/* ── v1.4: Article body font — Noto Serif SC for comfortable long-form reading ── */
+
+.single .wp-block-post-content p,
+.single .wp-block-post-content li,
+.single .wp-block-post-content blockquote,
+.single .wp-block-post-content td,
+.single .wp-block-post-content th {
+  font-family: 'Noto Serif SC', 'Songti SC', 'Source Han Serif SC', Georgia, serif;
+  font-size: 1.0125rem;
+  line-height: 1.95;
+  letter-spacing: 0.015em;
+}
+
+.single .wp-block-post-content blockquote {
+  border-left: 3px solid var(--wp--preset--color--accent);
+  padding-left: 1.2em;
+  color: var(--wp--preset--color--muted);
+  font-style: italic;
+}
+
+/* Keep code blocks in mono — override the serif above */
+.single .wp-block-post-content pre,
+.single .wp-block-post-content code {
+  font-family: var(--wp--preset--font-family--jetbrains-mono) !important;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  letter-spacing: 0;
+}
+
+.zs-dark .single .wp-block-post-content blockquote {
+  color: #94a3b8;
 }
