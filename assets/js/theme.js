@@ -182,6 +182,60 @@
     }
   }
 
+  // ── Banner carousel ──
+
+  function initBannerCarousel() {
+    var banners = document.querySelectorAll('.zs-banner-wrap[data-banner-carousel]');
+    if (!banners.length) return;
+
+    var intervalMs = (typeof zsTheme !== 'undefined' && zsTheme.bannerInterval)
+      ? parseInt(zsTheme.bannerInterval, 10) : 5000;
+    if (isNaN(intervalMs) || intervalMs < 2000) intervalMs = 5000;
+
+    for (var b = 0; b < banners.length; b++) {
+      (function (wrap) {
+        var slides = wrap.querySelectorAll('.zs-banner-slide');
+        var dots   = wrap.querySelectorAll('.zs-banner-dot');
+        var prev   = wrap.querySelector('.zs-banner-prev');
+        var next   = wrap.querySelector('.zs-banner-next');
+        if (slides.length < 2) return;
+
+        var current = 0;
+        var timer   = null;
+
+        function goTo(idx) {
+          slides[current].classList.remove('zs-banner-active');
+          if (dots[current]) dots[current].classList.remove('zs-banner-active');
+          current = (idx + slides.length) % slides.length;
+          slides[current].classList.add('zs-banner-active');
+          if (dots[current]) dots[current].classList.add('zs-banner-active');
+        }
+
+        function startTimer() {
+          timer = setInterval(function () { goTo(current + 1); }, intervalMs);
+        }
+
+        function stopTimer() {
+          clearInterval(timer);
+        }
+
+        if (prev) prev.addEventListener('click', function () { stopTimer(); goTo(current - 1); startTimer(); });
+        if (next) next.addEventListener('click', function () { stopTimer(); goTo(current + 1); startTimer(); });
+
+        for (var d = 0; d < dots.length; d++) {
+          (function (dot, idx) {
+            dot.addEventListener('click', function () { stopTimer(); goTo(idx); startTimer(); });
+          })(dots[d], d);
+        }
+
+        wrap.addEventListener('mouseenter', stopTimer);
+        wrap.addEventListener('mouseleave', startTimer);
+
+        startTimer();
+      })(banners[b]);
+    }
+  }
+
   // ── Init all on DOM ready ──
   document.addEventListener('DOMContentLoaded', function () {
     initSearchShortcutHint();
@@ -191,6 +245,7 @@
     initInnerPageLabel();
     initClock();
     initRunningTime();
+    initBannerCarousel();
 
     setTimeout(function () {
       document.documentElement.classList.add('zs-theme-ready');

@@ -120,6 +120,9 @@ function zs_theme_settings_defaults() {
 		'inner_page_label'   => '> $ cd /home/',
 		'avatar_url'         => '',
 		'blogger_name'       => '',
+		'banner_images'      => '',
+		'banner_interval'    => '5',
+		'banner_position'    => 'fullwidth',
 	);
 }
 
@@ -156,6 +159,17 @@ function zs_theme_sanitize_options( $input ) {
 			$output[ $key ] = in_array( $input[ $key ], $allowed, true ) ? $input[ $key ] : 'card';
 		} elseif ( in_array( $key, array( 'ad_image_url', 'ad_link_url', 'avatar_url' ), true ) ) {
 			$output[ $key ] = esc_url_raw( $input[ $key ] ?? '' );
+		} elseif ( $key === 'banner_images' ) {
+			$raw   = sanitize_textarea_field( $input[ $key ] ?? '' );
+			$urls  = array_filter( array_map( 'trim', explode( ',', $raw ) ) );
+			$clean = array_map( 'esc_url_raw', $urls );
+			$output[ $key ] = implode( ',', $clean );
+		} elseif ( $key === 'banner_interval' ) {
+			$val = (int) ( $input[ $key ] ?? 5 );
+			$output[ $key ] = (string) max( 2, min( 30, $val ) );
+		} elseif ( $key === 'banner_position' ) {
+			$output[ $key ] = in_array( $input[ $key ] ?? '', array( 'fullwidth', 'inner' ), true )
+				? $input[ $key ] : 'fullwidth';
 		} else {
 			$output[ $key ] = sanitize_text_field( $input[ $key ] ?? $default );
 		}
@@ -245,6 +259,29 @@ function zs_theme_settings_page() {
 						<p class="description">点击广告图片时跳转的链接（可选）。</p>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row">首页 Banner 图片</th>
+					<td>
+						<textarea name="zs_theme_options[banner_images]" class="large-text" rows="3" placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"><?php echo esc_textarea( $opts['banner_images'] ); ?></textarea>
+						<p class="description">多张图片用英文逗号分隔，配置多张时自动开启轮播。留空则不显示 Banner。</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">轮播间隔（秒）</th>
+					<td>
+						<input type="number" name="zs_theme_options[banner_interval]" value="<?php echo esc_attr( $opts['banner_interval'] ); ?>" min="2" max="30" style="width:80px">
+						<p class="description">多图轮播的自动切换间隔，2–30 秒，默认 5 秒。</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">Banner 位置</th>
+					<td>
+						<select name="zs_theme_options[banner_position]">
+							<option value="fullwidth" <?php selected( $opts['banner_position'], 'fullwidth' ); ?>>全宽（导航栏正下方，无间距）</option>
+							<option value="inner" <?php selected( $opts['banner_position'], 'inner' ); ?>>内嵌（文章列表顶部小 Banner）</option>
+						</select>
+					</td>
+				</tr>
 			</table>
 			<?php submit_button( '保存设置' ); ?>
 		</form>
@@ -327,17 +364,20 @@ function zs_theme_enqueue_scripts() {
 		$install_date = get_option( 'zs_site_install_date', current_time( 'Y-m-d' ) );
 	}
 
+	$banner_interval = (int) zs_theme_get_option( 'banner_interval' );
+
 	wp_localize_script( 'zs-theme-scripts', 'zsTheme', array(
-		'showToggle'     => zs_theme_get_option( 'show_theme_toggle' ),
-		'showSearch'     => zs_theme_get_option( 'show_search' ),
-		'showClock'      => zs_theme_get_option( 'show_clock' ),
-		'showRunningTime'=> zs_theme_get_option( 'show_running_time' ),
-		'installDate'    => $install_date,
-		'innerPageLabel' => zs_theme_get_option( 'inner_page_label' ),
-		'homeUrl'        => esc_url( home_url( '/' ) ),
-		'isHome'         => '',
-		'avatarUrl'      => zs_theme_get_option( 'avatar_url' ),
-		'bloggerName'    => zs_theme_get_option( 'blogger_name' ),
+		'showToggle'      => zs_theme_get_option( 'show_theme_toggle' ),
+		'showSearch'      => zs_theme_get_option( 'show_search' ),
+		'showClock'       => zs_theme_get_option( 'show_clock' ),
+		'showRunningTime' => zs_theme_get_option( 'show_running_time' ),
+		'installDate'     => $install_date,
+		'innerPageLabel'  => zs_theme_get_option( 'inner_page_label' ),
+		'homeUrl'         => esc_url( home_url( '/' ) ),
+		'isHome'          => '',
+		'avatarUrl'       => zs_theme_get_option( 'avatar_url' ),
+		'bloggerName'     => zs_theme_get_option( 'blogger_name' ),
+		'bannerInterval'  => max( 2, $banner_interval ?: 5 ) * 1000,
 	) );
 }
 add_action( 'wp_enqueue_scripts', 'zs_theme_enqueue_scripts' );
@@ -357,3 +397,51 @@ function zs_dark_mode_head_script() {
 	<?php
 }
 add_action( 'wp_head', 'zs_dark_mode_head_script', 1 );
+
+// ── Banner shortcode ──
+
+function zs_shortcode_banner( $atts ) {
+	$atts     = shortcode_atts( array( 'position' => '' ), $atts );
+	$position = zs_theme_get_option( 'banner_position' );
+
+	// 'position' attr lets templates declare which slot they are.
+	// Empty attr = always render (legacy/direct use).
+	if ( ! empty( $atts['position'] ) && $atts['position'] !== $position ) {
+		return '';
+	}
+
+	$images_str = zs_theme_get_option( 'banner_images' );
+	$images     = array_values( array_filter( array_map( 'trim', explode( ',', $images_str ) ) ) );
+
+	if ( empty( $images ) ) {
+		return '';
+	}
+
+	$is_inner    = ( $position === 'inner' );
+	$wrap_class  = 'zs-banner-wrap' . ( $is_inner ? ' zs-banner-inner' : ' zs-banner-fullwidth' );
+	$multi       = count( $images ) > 1;
+
+	$html = '<div class="' . esc_attr( $wrap_class ) . '"' . ( $multi ? ' data-banner-carousel="1"' : '' ) . '>';
+	$html .= '<div class="zs-banner-track">';
+	foreach ( $images as $i => $url ) {
+		$active = ( $i === 0 ) ? ' zs-banner-active' : '';
+		$html  .= '<div class="zs-banner-slide' . $active . '">';
+		$html  .= '<img src="' . esc_url( $url ) . '" alt="" loading="' . ( $i === 0 ? 'eager' : 'lazy' ) . '">';
+		$html  .= '</div>';
+	}
+	$html .= '</div>';
+
+	if ( $multi ) {
+		$html .= '<button class="zs-banner-prev" aria-label="上一张">&#8249;</button>';
+		$html .= '<button class="zs-banner-next" aria-label="下一张">&#8250;</button>';
+		$html .= '<div class="zs-banner-dots">';
+		foreach ( $images as $i => $url ) {
+			$html .= '<button class="zs-banner-dot' . ( $i === 0 ? ' zs-banner-active' : '' ) . '" data-index="' . $i . '" aria-label="第' . ( $i + 1 ) . '张"></button>';
+		}
+		$html .= '</div>';
+	}
+
+	$html .= '</div>';
+	return $html;
+}
+add_shortcode( 'zs_banner', 'zs_shortcode_banner' );
