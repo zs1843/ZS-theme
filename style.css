@@ -829,22 +829,47 @@ h1, h2, h3, h4, h5, h6,
   font-size: var(--wp--preset--font-size--medium) !important;
 }
 
-/* ── Post layout: Image top ── */
+/* ── Post layout: Media object (image left + text right) ── */
 
-.zs-layout-image-left .zs-post-card .wp-block-post-featured-image {
-  margin-bottom: var(--wp--preset--spacing--20);
+.zs-layout-image-left .zs-post-card {
+  display: grid !important;
+  grid-template-columns: 220px 1fr !important;
+  gap: 0 var(--wp--preset--spacing--30) !important;
+  align-items: start !important;
+}
+
+.zs-layout-image-left .zs-post-card > .wp-block-post-featured-image {
+  grid-row: 1 / -1;
+  width: 100% !important;
+  margin-bottom: 0 !important;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .zs-layout-image-left .zs-post-card .wp-block-post-featured-image img {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
+  display: block;
 }
 
 .zs-layout-image-left .wp-block-post-title {
   font-size: var(--wp--preset--font-size--medium) !important;
+  margin-top: 0 !important;
+}
+
+.zs-layout-image-left .zs-post-card .wp-block-post-excerpt {
+  font-size: var(--wp--preset--font-size--small) !important;
+}
+
+@media (max-width: 600px) {
+  .zs-layout-image-left .zs-post-card {
+    grid-template-columns: 1fr !important;
+  }
+  .zs-layout-image-left .zs-post-card > .wp-block-post-featured-image {
+    grid-row: auto;
+    margin-bottom: var(--wp--preset--spacing--20) !important;
+  }
 }
 
 @media (max-width: 782px) {
@@ -1609,6 +1634,26 @@ h1, h2, h3, h4, h5, h6,
 
 .page .wp-block-post-title {
   font-size: clamp(1.5rem, 3vw, 1.75rem);
+}
+
+/* ── v1.4: Article detail — content container with subtle background ── */
+
+.single .wp-block-post-content {
+  background: #f5f6f8;
+  padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--50);
+  border-radius: 12px;
+  margin-bottom: var(--wp--preset--spacing--40);
+}
+
+.zs-dark .single .wp-block-post-content {
+  background: rgba(30, 41, 59, 0.45);
+}
+
+@media (max-width: 782px) {
+  .single .wp-block-post-content {
+    padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--30);
+    border-radius: 8px;
+  }
 }
 
 /* ── v1.4: Article body font — Noto Serif SC for comfortable long-form reading ── */
