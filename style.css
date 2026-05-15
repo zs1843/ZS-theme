@@ -836,7 +836,7 @@ h1, h2, h3, h4, h5, h6,
   display: grid !important;
   grid-template-columns: 200px 1fr !important;
   gap: 0 var(--wp--preset--spacing--30) !important;
-  align-items: center !important;
+  align-items: start !important;
 }
 
 .zs-layout-image-left .zs-post-card > .wp-block-post-featured-image {
@@ -1680,7 +1680,7 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .single .wp-block-post-content {
-  background: #ffffff;
+  background: #e8eaef;
   padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--50);
   border-radius: 12px;
   margin-bottom: var(--wp--preset--spacing--40);
